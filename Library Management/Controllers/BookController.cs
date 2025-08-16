@@ -78,5 +78,21 @@ namespace Library_Management.Controllers
 
             return View(book);
         }
+
+        [HttpPost]
+        public IActionResult AddCopy(Guid id)
+        {
+            try
+            {
+                BookService.Instance.AddCopy(id);
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
     }
 }
