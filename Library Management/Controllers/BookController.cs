@@ -49,13 +49,14 @@ namespace Library_Management.Controllers
             return Ok();
         }
 
+        // ✅ UPDATED DeleteModal and Delete
         public IActionResult DeleteModal(Guid id)
         {
             var book = BookService.Instance.GetBookById(id);
             if (book == null)
                 return NotFound();
 
-            return PartialView("_DeletePartial", book);
+            return PartialView("_DeleteBookPartial", book); // ✅ updated partial name
         }
 
         [HttpPost]
@@ -66,7 +67,7 @@ namespace Library_Management.Controllers
                 return NotFound();
 
             BookService.Instance.DeleteBook(id);
-            return Ok();
+            return Ok(); // You can return a redirect if not using AJAX
         }
 
         public IActionResult Details(Guid id)
