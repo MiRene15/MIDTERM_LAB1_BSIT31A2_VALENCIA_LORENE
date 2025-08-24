@@ -1,0 +1,33 @@
+﻿@model Library_Management.Models.AuthorDetailsViewModel
+
+@{
+    ViewData["Title"] = @Model.Name;
+}
+
+<div class="row g-4">
+    <div class="col-md-3 text-center">
+        <img src="@Model.ProfileImageUrl" class="img-fluid rounded" style="max-height:250px; object-fit:cover; background:#eee" />
+    </div>
+    <div class="col-md-9">
+        <h3>@Model.Name</h3>
+        <p class="text-muted">@Model.BirthDate?.ToString("yyyy-MM-dd")</p>
+        <p>@Model.Biography</p>
+    </div>
+</div>
+
+<hr />
+<h5>Books</h5>
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+    @foreach (var b in Model.Books)
+    {
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm">
+                <img src="@b.CoverImageUrl" class="card-img-top" style="height:180px; object-fit:cover; background:#eee" />
+                <div class="card-body">
+                    <div class="fw-semibold">@b.Title</div>
+                    <div class="small text-muted">@b.Genre</div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

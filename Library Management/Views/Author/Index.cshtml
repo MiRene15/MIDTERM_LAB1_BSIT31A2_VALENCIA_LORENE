@@ -1,0 +1,64 @@
+﻿@model IEnumerable<Library_Management.Models.AuthorListViewModel>
+
+@{
+    ViewData["Title"] = "Authors";
+}
+
+<h1 class="mb-4 fw-bold">Authors</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" onclick="openAddAuthor()"><i class="bi bi-plus-circle"></i> Add Author</button>
+</div>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    @foreach (var a in Model)
+    {
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="position-absolute top-0 end-0 p-2 d-flex gap-1">
+                    <a href="javascript:void(0);" class="btn btn-sm btn-outline-secondary" title="Edit" onclick="openEditAuthor('@a.Id')"><i class="bi bi-pencil"></i></a>
+                    <a href="javascript:void(0);" class="btn btn-sm btn-outline-danger" title="Delete" onclick="openDeleteAuthor('@a.Id')"><i class="bi bi-trash"></i></a>
+                    <form asp-action="Archive" asp-controller="Author" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@a.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Archive"><i class="bi bi-archive"></i></button>
+                    </form>
+                </div>
+                <img src="@a.ProfileImageUrl" class="card-img-top" style="height:200px; object-fit:cover; background:#eee" />
+                <div class="card-body position-relative">
+                    <h6 class="card-title text-truncate">@a.Name</h6>
+                    <p class="text-muted mb-0">Books: @a.BooksCount</p>
+                    <a asp-action="Details" asp-controller="Author" asp-route-id="@a.Id" class="stretched-link" title="View details"></a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="modal fade" id="authorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAddAuthor() {
+            fetch(`/Author/AddModal`).then(r => r.text()).then(html => { document.querySelector('#authorModal .modal-content').innerHTML = html; new bootstrap.Modal(document.getElementById('authorModal')).show(); });
+        }
+        function openEditAuthor(id) {
+            fetch(`/Author/EditModal?id=${encodeURIComponent(id)}`).then(r => r.text()).then(html => { document.querySelector('#authorModal .modal-content').innerHTML = html; new bootstrap.Modal(document.getElementById('authorModal')).show(); });
+        }
+        function openDeleteAuthor(id) {
+            fetch(`/Author/DeleteModal?id=${encodeURIComponent(id)}`).then(r => r.text()).then(html => { document.querySelector('#authorModal .modal-content').innerHTML = html; new bootstrap.Modal(document.getElementById('authorModal')).show(); });
+        }
+        document.addEventListener('submit', function (e) {
+            const f = e.target;
+            if (f.matches('#addAuthorForm') || f.matches('#editAuthorForm') || f.matches('#deleteAuthorForm')) {
+                e.preventDefault();
+                fetch(f.action, { method: f.method, body: new URLSearchParams(new FormData(f)) })
+                    .then(resp => { if (!resp.ok) throw new Error('Failed'); location.reload(); })
+                    .catch(err => alert(err.message));
+            }
+        });
+    </script>
+}

@@ -3,6 +3,9 @@ using Library_Management_Domain.Entities;
 
 public class BookService
 {
+    private static BookService? _instance;
+    public static BookService Instance => _instance ??= new BookService();
+
     private readonly ICollection<Book> _books = new List<Book>();
     private readonly ICollection<Author> _authors = new List<Author>();
     private readonly ICollection<BookCopy> _bookCopies = new List<BookCopy>();
@@ -215,6 +218,54 @@ public class BookService
         }
     }
 
+    // BOOKS
+    public IEnumerable<BookListViewModel> GetBooks(bool includeArchived = false)
+    {
+        var books = includeArchived ? _books : _books.Where(b => !b.IsArchived);
+        return books.Select(b => new BookListViewModel
+        {
+            BookId = b.Id,
+            Title = b.Title,
+            ISBN = b.ISBN,
+            Description = b.Description,
+            Genre = b.Genre,
+            PublishedDate = b.PublishedDate,
+            CoverImageUrl = _bookCopies.FirstOrDefault(bi => bi.Book.Id == b.Id)?.CoverImageUrl,
+            AuthorName = _authors.FirstOrDefault(a => a.Books.Any(bk => bk.Id == b.Id))?.Name,
+            AuthorProfileImageUrl = _authors.FirstOrDefault(a => a.Books.Any(bk => bk.Id == b.Id))?.ProfileImageUrl,
+            TotalCopies = _bookCopies.Count(bi => bi.Book.Id == b.Id),
+            AvailableCopies = _bookCopies.Count(bi => bi.Book.Id == b.Id && bi.PulloutDate == null)
+        });
+    }
+
+    public BookDetailsViewModel GetBookDetails(Guid id)
+    {
+        var book = _books.FirstOrDefault(b => b.Id == id) ?? throw new KeyNotFoundException("Book not found");
+        var author = _authors.FirstOrDefault(a => a.Books.Any(bk => bk.Id == id));
+        return new BookDetailsViewModel
+        {
+            BookId = book.Id,
+            Title = book.Title,
+            ISBN = book.ISBN,
+            Description = book.Description,
+            Genre = book.Genre,
+            PublishedDate = book.PublishedDate,
+            CoverImageUrl = _bookCopies.FirstOrDefault(bi => bi.Book.Id == id)?.CoverImageUrl,
+            AuthorName = author?.Name,
+            AuthorProfileImageUrl = author?.ProfileImageUrl,
+            Copies = _bookCopies.Where(bc => bc.Book.Id == id)
+                                .Select(bc => new BookCopyViewModel
+                                {
+                                    Id = bc.Id,
+                                    CoverImageUrl = bc.CoverImageUrl,
+                                    Condition = bc.Condition,
+                                    Source = bc.Source,
+                                    AddedDate = bc.AddedDate,
+                                    PulloutDate = bc.PulloutDate,
+                                    PulloutReason = bc.PulloutReason
+                                })
+        };
+    }
 
     public void AddBook(AddBookViewModel book)
     {
@@ -236,12 +287,9 @@ public class BookService
             Id = Guid.NewGuid(),
             Name = book.Author,
             ProfileImageUrl = book.AuthorProfileImageUrl,
-            Books = new List<Book>()  // Initialize the Books list!
+            Books = new List<Book>()
         };
-
-        // Link the new book to the new author
         newAuthor.Books.Add(newBook);
-
         _authors.Add(newAuthor);
 
         var newBookItem = new BookCopy
@@ -256,30 +304,9 @@ public class BookService
         _bookCopies.Add(newBookItem);
     }
 
-
-
-    public IEnumerable<BookListViewModel> GetBooks()
-    {
-        return _books.Select(b => new BookListViewModel
-        {
-            BookId = b.Id,
-            Title = b.Title,
-            ISBN = b.ISBN,
-            Description = b.Description,
-            Genre = b.Genre,
-
-            PublishedDate = b.PublishedDate,
-            CoverImageUrl = _bookCopies.FirstOrDefault(bi => bi.Book.Id == b.Id)?.CoverImageUrl,
-            AuthorName = _authors.FirstOrDefault(a => a.Books.Any(bk => bk.Id == b.Id))?.Name,
-            AuthorProfileImageUrl = _authors.FirstOrDefault(a => a.Books.Any(bk => bk.Id == b.Id))?.ProfileImageUrl,
-            TotalCopies = _bookCopies.Count(bi => bi.Book.Id == b.Id),
-            AvailableCopies = _bookCopies.Count(bi => bi.Book.Id == b.Id && bi.PulloutDate == null)
-        });
-    }
-
     public EditBookViewModel GetBookById(Guid id)
     {
-        var bookViewModel = GetBooks().FirstOrDefault(b => b.BookId == id) ?? throw new KeyNotFoundException("Book not found");
+        var bookViewModel = GetBooks(true).FirstOrDefault(b => b.BookId == id) ?? throw new KeyNotFoundException("Book not found");
         var editBookViewModel = new EditBookViewModel
         {
             BookId = bookViewModel.BookId,
@@ -293,28 +320,21 @@ public class BookService
             AuthorProfileImageUrl = bookViewModel.AuthorProfileImageUrl,
             CoverImageUrl = bookViewModel.CoverImageUrl,
         };
-
-        return editBookViewModel ?? throw new KeyNotFoundException("Book not found");
+        return editBookViewModel;
     }
 
     internal void UpdateBook(EditBookViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm, nameof(vm));
-
-        // Find the book by ID
         var book = _books.FirstOrDefault(b => b.Id == vm.BookId) ?? throw new KeyNotFoundException("Book not found");
-
-        // Update basic book properties
         book.Title = vm.Title;
         book.ISBN = vm.ISBN;
         book.Description = vm.Description;
         book.Genre = vm.Genre;
         book.PublishedDate = vm.PublishedDate;
 
-        // Find the old author (if any) so we can remove the book if author changes
         var oldAuthor = _authors.FirstOrDefault(a => a.Books.Any(bk => bk.Id == book.Id));
 
-        // Find or create the new author
         Author author = null;
         if (vm.AuthorId.HasValue)
         {
@@ -333,24 +353,20 @@ public class BookService
         }
         else
         {
-            // Update existing author info
             author.Name = vm.Author;
             author.ProfileImageUrl = vm.AuthorProfileImageUrl;
         }
 
-        // If author changed, remove the book from old author
         if (oldAuthor != null && oldAuthor.Id != author.Id)
         {
             oldAuthor.Books.Remove(book);
         }
 
-        // Ensure the book is linked to the new author
         if (!author.Books.Any(bk => bk.Id == book.Id))
         {
             author.Books.Add(book);
         }
 
-        // Update or create the BookCopy (cover image)
         var bookCopy = _bookCopies.FirstOrDefault(bi => bi.Book.Id == vm.BookId);
         if (bookCopy != null)
         {
@@ -368,7 +384,6 @@ public class BookService
             _bookCopies.Add(bookCopy);
         }
     }
-
 
     public void DeleteBook(Guid id)
     {
@@ -390,28 +405,33 @@ public class BookService
         }
     }
 
-    // Singleton pattern
-    private static BookService? _instance;
-    public static BookService Instance
+    // Copies helpers
+    public IEnumerable<BookCopyViewModel> GetCopies(Guid bookId)
     {
-        get
-        {
-            if (_instance == null)
+        return _bookCopies.Where(bc => bc.Book.Id == bookId)
+            .Select(bc => new BookCopyViewModel
             {
-                _instance = new BookService();
-            }
-            return _instance;
-        }
+                Id = bc.Id,
+                CoverImageUrl = bc.CoverImageUrl,
+                Condition = bc.Condition,
+                Source = bc.Source,
+                AddedDate = bc.AddedDate,
+                PulloutDate = bc.PulloutDate,
+                PulloutReason = bc.PulloutReason
+            });
+    }
+
+    public void PullOutCopy(Guid copyId, string reason)
+    {
+        var copy = _bookCopies.FirstOrDefault(c => c.Id == copyId) ?? throw new KeyNotFoundException("Copy not found");
+        copy.PulloutDate = DateTime.Now;
+        copy.PulloutReason = reason;
     }
 
     public void AddCopy(Guid bookId)
     {
-        var book = _books.FirstOrDefault(b => b.Id == bookId);
-        if (book == null)
-            throw new KeyNotFoundException("Book not found.");
-
+        var book = _books.FirstOrDefault(b => b.Id == bookId) ?? throw new KeyNotFoundException("Book not found.");
         var coverImage = _bookCopies.FirstOrDefault(bc => bc.Book.Id == bookId)?.CoverImageUrl;
-
         var newCopy = new BookCopy
         {
             Id = Guid.NewGuid(),
@@ -421,9 +441,79 @@ public class BookService
             Source = "Manual Add",
             CoverImageUrl = coverImage
         };
-
         _bookCopies.Add(newCopy);
     }
 
+    // Authors helpers
+    public IEnumerable<AuthorListViewModel> GetAuthors(bool includeArchived = false)
+    {
+        var authors = includeArchived ? _authors : _authors.Where(a => !a.IsArchived);
+        return authors.Select(a => new AuthorListViewModel
+        {
+            Id = a.Id,
+            Name = a.Name,
+            ProfileImageUrl = a.ProfileImageUrl,
+            IsArchived = a.IsArchived,
+            BooksCount = a.Books.Count(b => !b.IsArchived)
+        });
+    }
 
+    public AuthorDetailsViewModel GetAuthorDetails(Guid id)
+    {
+        var author = _authors.FirstOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Author not found");
+        return new AuthorDetailsViewModel
+        {
+            Id = author.Id,
+            Name = author.Name,
+            Biography = author.Biography,
+            BirthDate = author.BirthDate,
+            ProfileImageUrl = author.ProfileImageUrl,
+            Books = GetBooks().Where(b => author.Books.Any(ab => ab.Id == b.BookId))
+        };
+    }
+
+    public Guid CreateAuthor(AddAuthorViewModel vm)
+    {
+        var author = new Author
+        {
+            Id = Guid.NewGuid(),
+            Name = vm.Name,
+            Biography = vm.Biography,
+            BirthDate = vm.BirthDate,
+            ProfileImageUrl = vm.ProfileImageUrl,
+            Books = new List<Book>()
+        };
+        _authors.Add(author);
+        return author.Id;
+    }
+
+    public void UpdateAuthor(EditAuthorViewModel vm)
+    {
+        var author = _authors.FirstOrDefault(a => a.Id == vm.Id) ?? throw new KeyNotFoundException("Author not found");
+        author.Name = vm.Name;
+        author.Biography = vm.Biography;
+        author.BirthDate = vm.BirthDate;
+        author.ProfileImageUrl = vm.ProfileImageUrl;
+    }
+
+    public void DeleteAuthor(Guid id)
+    {
+        var author = _authors.FirstOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Author not found");
+        // Decide behavior: delete or detach books. We'll detach to keep books.
+        foreach (var book in author.Books.ToList())
+        {
+            // Keep the book but remove link to this author
+            // Since we only store author->books, removing author removes association
+        }
+        _authors.Remove(author);
+    }
+
+    // Archiving
+    public void ArchiveBook(Guid id) { var b = _books.FirstOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException(); b.IsArchived = true; }
+    public void RestoreBook(Guid id) { var b = _books.FirstOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException(); b.IsArchived = false; }
+    public void ArchiveAuthor(Guid id) { var a = _authors.FirstOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException(); a.IsArchived = true; }
+    public void RestoreAuthor(Guid id) { var a = _authors.FirstOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException(); a.IsArchived = false; }
+
+    public IEnumerable<BookListViewModel> GetArchivedBooks() => GetBooks(true).Where(b => _books.Any(db => db.Id == b.BookId && db.IsArchived));
+    public IEnumerable<AuthorListViewModel> GetArchivedAuthors() => GetAuthors(true).Where(a => a.IsArchived);
 }

@@ -49,14 +49,14 @@ namespace Library_Management.Controllers
             return Ok();
         }
 
-        // ✅ UPDATED DeleteModal and Delete
+        // Delete Modal and Delete
         public IActionResult DeleteModal(Guid id)
         {
             var book = BookService.Instance.GetBookById(id);
             if (book == null)
                 return NotFound();
 
-            return PartialView("_DeleteBookPartial", book); // ✅ updated partial name
+            return PartialView("_DeleteBookPartial", book);
         }
 
         [HttpPost]
@@ -67,16 +67,20 @@ namespace Library_Management.Controllers
                 return NotFound();
 
             BookService.Instance.DeleteBook(id);
-            return Ok(); // You can return a redirect if not using AJAX
+            return Ok();
         }
 
         public IActionResult Details(Guid id)
         {
-            var book = BookService.Instance.GetBooks().FirstOrDefault(b => b.BookId == id);
-            if (book == null)
+            try
+            {
+                var vm = BookService.Instance.GetBookDetails(id);
+                return View(vm);
+            }
+            catch
+            {
                 return NotFound();
-
-            return View(book);
+            }
         }
 
         [HttpPost]
@@ -93,6 +97,34 @@ namespace Library_Management.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult PullOutCopyModal(Guid copyId, Guid bookId)
+        {
+            ViewBag.BookId = bookId;
+            ViewBag.CopyId = copyId;
+            return PartialView("_PullOutCopyPartial");
+        }
 
+        [HttpPost]
+        public IActionResult PullOutCopy(Guid copyId, Guid bookId, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason)) return BadRequest("Reason is required");
+            BookService.Instance.PullOutCopy(copyId, reason);
+            return RedirectToAction("Details", new { id = bookId });
+        }
+
+        [HttpPost]
+        public IActionResult Archive(Guid id)
+        {
+            BookService.Instance.ArchiveBook(id);
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public IActionResult Restore(Guid id)
+        {
+            BookService.Instance.RestoreBook(id);
+            return RedirectToAction("Index");
+        }
     }
 }

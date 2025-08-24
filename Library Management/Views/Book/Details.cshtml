@@ -1,66 +1,91 @@
-﻿@model Library_Management.Models.BookListViewModel
+﻿@model Library_Management.Models.BookDetailsViewModel
 
 <div class="modal-header bg-primary text-white">
     <h5 class="modal-title">@Model.Title</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <a asp-action="Index" class="btn-close" aria-label="Close"></a>
 </div>
 
 <div class="modal-body">
     <div class="row g-4">
-        <!-- Cover Image -->
         <div class="col-md-4 text-center">
-            <img src="@Model.CoverImageUrl"
-                 class="img-fluid rounded shadow-sm"
-                 alt="@Model.Title"
-                 style="max-height: 300px; object-fit: cover;">
+            <img src="@Model.CoverImageUrl" class="img-fluid rounded shadow-sm" alt="@Model.Title" style="max-height: 300px; object-fit: cover;">
         </div>
 
-        <!-- Details -->
         <div class="col-md-8">
             <dl class="row mb-0">
-                <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(m => m.ISBN)</dt>
+                <dt class="col-sm-4 fw-semibold">ISBN</dt>
                 <dd class="col-sm-8">@Model.ISBN</dd>
 
-                <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(m => m.AuthorName)</dt>
+                <dt class="col-sm-4 fw-semibold">Author</dt>
                 <dd class="col-sm-8 d-flex align-items-center">
                     @Model.AuthorName
                     @if (!string.IsNullOrEmpty(Model.AuthorProfileImageUrl))
                     {
-                        <img src="@Model.AuthorProfileImageUrl"
-                             class="rounded-circle ms-2"
-                             style="width: 30px; height: 30px; object-fit: cover;"
-                             alt="Author Profile">
+                        <img src="@Model.AuthorProfileImageUrl" class="rounded-circle ms-2" style="width: 30px; height: 30px; object-fit: cover;" alt="Author Profile">
                     }
                 </dd>
 
-                <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(m => m.Genre)</dt>
+                <dt class="col-sm-4 fw-semibold">Genre</dt>
                 <dd class="col-sm-8">@Model.Genre</dd>
 
-                <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(m => m.PublishedDate)</dt>
+                <dt class="col-sm-4 fw-semibold">Published</dt>
                 <dd class="col-sm-8">@Model.PublishedDate?.ToString("yyyy-MM-dd")</dd>
-
-                <dt class="col-sm-4 fw-semibold">Available Copies</dt>
-                <dd class="col-sm-8">@Model.AvailableCopies / @Model.TotalCopies</dd>
             </dl>
 
             <hr />
-
-            <h6 class="fw-semibold">@Html.DisplayNameFor(m => m.Description)</h6>
+            <h6 class="fw-semibold">Description</h6>
             <p class="mb-0">@Model.Description</p>
         </div>
+    </div>
+
+    <hr />
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-semibold mb-0">Copies</h6>
+        <form asp-action="AddCopy" asp-controller="Book" method="post" class="mb-0">
+            <input type="hidden" name="id" value="@Model.BookId" />
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> Add Copy</button>
+        </form>
+    </div>
+
+    <div class="list-group">
+        @foreach (var c in Model.Copies)
+        {
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="@c.CoverImageUrl" style="width:50px; height:70px; object-fit:cover; background:#eee" class="rounded" />
+                    <div>
+                        <div class="small text-muted">Added: @c.AddedDate?.ToString("yyyy-MM-dd") | Source: @c.Source | Condition: @c.Condition</div>
+                        @if (c.IsPulledOut)
+                        {
+                            <div class="badge bg-danger">Pulled out @c.PulloutDate?.ToString("yyyy-MM-dd"): @c.PulloutReason</div>
+                        }
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-warning" onclick="openPullOut('@c.Id')" @(c.IsPulledOut ? "disabled" : "")>Pull-out</button>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
 <div class="modal-footer">
-    <a asp-action="Index" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-left"></i> Close
-    </a>
-
-    <!-- Add Copies Form -->
-    <form asp-action="AddCopy" asp-controller="Book" method="post">
-        <input type="hidden" name="id" value="@Model.BookId" />
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Copy
-        </button>
-    </form>
+    <a asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Close</a>
 </div>
+
+<div class="modal fade" id="pulloutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openPullOut(copyId) {
+            fetch(`/Book/PullOutCopyModal?copyId=${encodeURIComponent(copyId)}&bookId=${encodeURIComponent('@Model.BookId')}`)
+                .then(r => r.text())
+                .then(html => { document.querySelector('#pulloutModal .modal-content').innerHTML = html; new bootstrap.Modal(document.getElementById('pulloutModal')).show(); })
+                .catch(err => alert(err.message));
+        }
+    </script>
+}

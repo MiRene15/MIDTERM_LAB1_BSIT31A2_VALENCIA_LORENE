@@ -38,6 +38,13 @@
                        onclick="openDeleteModal('@book.BookId')">
                         <i class="bi bi-trash"></i>
                     </a>
+
+                    <form asp-action="Archive" asp-controller="Book" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@book.BookId" />
+                        <button type="submit" class="action-btn" title="Archive" style="border:0; background:transparent;">
+                            <i class="bi bi-archive"></i>
+                        </button>
+                    </form>
                 </div>
 
                 <img src="@book.CoverImageUrl" class="card-img-top" alt="@book.Title" style="height: 200px; object-fit: cover; background-color: silver;">
