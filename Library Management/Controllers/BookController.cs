@@ -37,7 +37,7 @@ namespace Library_Management.Controllers
 
         public IActionResult EditModal(Guid id)
         {
-            var editBookViewModel = BookService.Instance.GetBookById(id);
+            var editBookViewModel = _bookService.GetBookById(id);
             if (editBookViewModel == null)
                 return NotFound();
 

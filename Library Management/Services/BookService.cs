@@ -7,6 +7,7 @@ public class BookService : IBookService
     private readonly ICollection<Book> _books = new List<Book>();
     private readonly ICollection<Author> _authors = new List<Author>();
     private readonly ICollection<BookCopy> _bookCopies = new List<BookCopy>();
+    internal static object _bookService;
 
     private BookService()
     {
