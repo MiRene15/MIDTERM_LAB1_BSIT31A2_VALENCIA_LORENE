@@ -1,10 +1,8 @@
 ﻿using Library_Management.Models;
 using Library_Management_Domain.Entities;
 
-public class BookService
+public class BookService : IBookService
 {
-    private static BookService? _instance;
-    public static BookService Instance => _instance ??= new BookService();
 
     private readonly ICollection<Book> _books = new List<Book>();
     private readonly ICollection<Author> _authors = new List<Author>();

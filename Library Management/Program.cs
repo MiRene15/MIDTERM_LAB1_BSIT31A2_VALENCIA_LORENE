@@ -1,7 +1,16 @@
+using Library_Management.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddDbContext<BookDbContext>(opt => opt.UseSqlServer(
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
+
+//builder.Services.AddScoped<IBookService, BookDBService>(); //var bookservice = new BookService() NO! NOT! NO!
+builder.Services.AddScoped<IBookService,BookService>();
 
 var app = builder.Build();
 

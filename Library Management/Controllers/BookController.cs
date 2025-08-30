@@ -5,9 +5,16 @@ namespace Library_Management.Controllers
 {
     public class BookController : Controller
     {
+        private readonly IBookService _bookService;
+
+        public BookController(IBookService bookService)
+        {
+            this._bookService = bookService;
+        }
+
         public IActionResult Index()
         {
-            var books = BookService.Instance.GetBooks();
+            var books = _bookService.GetBooks();
             return View(books);
         }
 
@@ -24,7 +31,7 @@ namespace Library_Management.Controllers
                 return BadRequest(ModelState);
             }
 
-            BookService.Instance.AddBook(vm);
+            _bookService.AddBook(vm);
             return Ok();
         }
 
