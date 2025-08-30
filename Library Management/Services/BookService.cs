@@ -515,4 +515,9 @@ public class BookService : IBookService
 
     public IEnumerable<BookListViewModel> GetArchivedBooks() => GetBooks(true).Where(b => _books.Any(db => db.Id == b.BookId && db.IsArchived));
     public IEnumerable<AuthorListViewModel> GetArchivedAuthors() => GetAuthors(true).Where(a => a.IsArchived);
+
+    void IBookService.UpdateBook(EditBookViewModel vm)
+    {
+        throw new NotImplementedException();
+    }
 }

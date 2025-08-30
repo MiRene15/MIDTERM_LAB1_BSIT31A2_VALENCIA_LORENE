@@ -9,7 +9,7 @@ namespace Library_Management.Controllers
 
         public BookController(IBookService bookService)
         {
-            this._bookService = bookService;
+            _bookService = bookService;
         }
 
         public IActionResult Index()
@@ -27,9 +27,7 @@ namespace Library_Management.Controllers
         public IActionResult Add(AddBookViewModel vm)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             _bookService.AddBook(vm);
             return Ok();
@@ -48,18 +46,15 @@ namespace Library_Management.Controllers
         public IActionResult Edit(EditBookViewModel vm)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
-            BookService.Instance.UpdateBook(vm);
+            _bookService.UpdateBook(vm);
             return Ok();
         }
 
-        // Delete Modal and Delete
         public IActionResult DeleteModal(Guid id)
         {
-            var book = BookService.Instance.GetBookById(id);
+            var book = _bookService.GetBookById(id);
             if (book == null)
                 return NotFound();
 
@@ -69,11 +64,11 @@ namespace Library_Management.Controllers
         [HttpPost]
         public IActionResult Delete(Guid id)
         {
-            var book = BookService.Instance.GetBookById(id);
+            var book = _bookService.GetBookById(id);
             if (book == null)
                 return NotFound();
 
-            BookService.Instance.DeleteBook(id);
+            _bookService.DeleteBook(id);
             return Ok();
         }
 
@@ -81,7 +76,7 @@ namespace Library_Management.Controllers
         {
             try
             {
-                var vm = BookService.Instance.GetBookDetails(id);
+                var vm = _bookService.GetBookDetails(id);
                 return View(vm);
             }
             catch
@@ -95,7 +90,7 @@ namespace Library_Management.Controllers
         {
             try
             {
-                BookService.Instance.AddCopy(id);
+                _bookService.AddCopy(id);
                 return RedirectToAction("Details", new { id });
             }
             catch (Exception ex)
@@ -115,22 +110,24 @@ namespace Library_Management.Controllers
         [HttpPost]
         public IActionResult PullOutCopy(Guid copyId, Guid bookId, string reason)
         {
-            if (string.IsNullOrWhiteSpace(reason)) return BadRequest("Reason is required");
-            BookService.Instance.PullOutCopy(copyId, reason);
+            if (string.IsNullOrWhiteSpace(reason))
+                return BadRequest("Reason is required");
+
+            _bookService.PullOutCopy(copyId, reason);
             return RedirectToAction("Details", new { id = bookId });
         }
 
         [HttpPost]
         public IActionResult Archive(Guid id)
         {
-            BookService.Instance.ArchiveBook(id);
+            _bookService.ArchiveBook(id);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public IActionResult Restore(Guid id)
         {
-            BookService.Instance.RestoreBook(id);
+            _bookService.RestoreBook(id);
             return RedirectToAction("Index");
         }
     }

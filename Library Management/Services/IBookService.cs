@@ -9,6 +9,7 @@ public interface IBookService
     Guid CreateAuthor(AddAuthorViewModel vm);
     void DeleteAuthor(Guid id);
     void DeleteBook(Guid id);
+    void UpdateBook(EditBookViewModel vm);
     IEnumerable<AuthorListViewModel> GetArchivedAuthors();
     IEnumerable<BookListViewModel> GetArchivedBooks();
     AuthorDetailsViewModel GetAuthorDetails(Guid id);
@@ -116,6 +117,11 @@ public class BookDBService : IBookService
     }
 
     public void UpdateAuthor(EditAuthorViewModel vm)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void UpdateBook(EditBookViewModel vm)
     {
         throw new NotImplementedException();
     }
